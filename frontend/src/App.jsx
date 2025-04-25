@@ -1,11 +1,12 @@
 import React from "react";
+import SpeechToText from "./components/SpeechToText";
 
-const App = () => {
+function App() {
   return (
-    <div>
-      <h1 class="text-3xl font-bold underline">Hello world!</h1>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <SpeechToText />
     </div>
   );
-};
+}
 
 export default App;
