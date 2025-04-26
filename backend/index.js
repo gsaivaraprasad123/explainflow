@@ -13,11 +13,13 @@ const port = 3000;
 app.use(bodyParser.json());
 
 app.post("/analyze", (req, res) => {
-  const inputText = req.body.text;
-  if (!inputText)
-    return res.status(400).json({ error: "No input text provided" });
+  const { topic, text } = req.body;
 
-  const doc = nlp.readDoc(inputText);
+  if (!topic || !text) {
+    return res.status(400).json({ error: "Both topic and text are required" });
+  }
+
+  const doc = nlp.readDoc(text);
   const sentences = doc.sentences();
 
   let nodes = [];
@@ -61,7 +63,7 @@ app.post("/analyze", (req, res) => {
     }
   });
 
-  res.json({ nodes, edges });
+  res.json({ topic, nodes, edges });
 });
 
 app.listen(port, () => {
