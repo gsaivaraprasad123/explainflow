@@ -18,7 +18,6 @@ function App() {
             path="/"
             element={
               <>
-                <Topic />
                 <SpeechToText />
               </>
             }
