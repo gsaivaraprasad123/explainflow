@@ -61,6 +61,7 @@ const SpeechToText = () => {
   const handleAnalyze = async () => {
     try {
       const response = await axios.post("http://localhost:3000/analyze", {
+        topic,
         text,
       });
       localStorage.setItem('flowData', JSON.stringify(response.data));
