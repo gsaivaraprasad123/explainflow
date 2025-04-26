@@ -5,6 +5,7 @@ const model = require("wink-eng-lite-web-model");
 const nlp = winkNLP(model);
 const its = nlp.its;
 const cors = require('cors')
+const axios = require('axios')
 
 const app = express();
 app.use(cors())
@@ -65,6 +66,63 @@ app.post("/analyze", (req, res) => {
 
   res.json({ topic, nodes, edges });
 });
+
+app.post('/feedback', async (req, res) => {
+  const { text, topic } = req.body;
+
+  if (!text || !topic) {
+    return res.status(400).json({ error: "Both text and topic are required." });
+  }
+
+  try {
+    const flashResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCBglkC8FKGbqyABglb-sboowDfBR2O1Pw',
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: `
+You are an expert educator.
+Given the topic "${topic}" and the user's provided text, do the following:
+1. If there are any important points or subtopics missing from the user's text, list them in the feedback.
+2. Write a clean, short overview of the topic covering everything important.
+3. DO NOT include any other information like explanations or additional details. Only provide the feedback and overview.
+
+Respond ONLY in raw JSON format, with no markdown or explanations.
+
+Format:
+{
+  "feedback": ["point 1", "point 2", "point 3"],
+  "overview": "overview text here"
+}
+
+User's Provided Text:
+${text}
+                `.trim()
+              }
+            ]
+          }
+        ]
+      }
+    );
+
+    let rawText = flashResponse.data.candidates[0].content.parts[0].text.trim();
+
+    // Remove surrounding Markdown code block if present
+    if (rawText.startsWith('```')) {
+      rawText = rawText.replace(/^```json\s*|^```\s*|```$/g, '');
+    }
+
+    const parsed = JSON.parse(rawText);
+    res.json({ feedback: parsed.feedback, overview: parsed.overview });
+  } catch (error) {
+    console.error('Flash Feedback Error:', error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to generate feedback/overview." });
+  }
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
