@@ -59,19 +59,28 @@ const SpeechToText = () => {
   };
 
   const handleAnalyze = async () => {
+    if (!topic.trim() || !text.trim()) {
+      alert("Both topic and text are required before analyzing.");
+      return;
+    }
+  
     try {
-      const response = await axios.post("http://localhost:3000/analyze", {
-        topic,
-        text,
-      });
+      const payload = {
+        topic: topic.trim(),
+        text: text.trim(),
+      };
+  
+      const response = await axios.post("http://localhost:3000/analyze", payload);
+  
       localStorage.setItem('flowData', JSON.stringify(response.data));
-      navigate("/flow")
+      navigate("/flow");
       console.log("API Response:", response.data);
     } catch (error) {
       console.error("Error analyzing text:", error);
       alert("Failed to analyze text. Check console for details.");
     }
   };
+  
 
   return (
     <div className="w-full max-w-xl mx-auto p-4">
