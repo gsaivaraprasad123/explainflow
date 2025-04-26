@@ -73,6 +73,7 @@ const SpeechToText = () => {
       const response = await axios.post("http://localhost:3000/analyze", payload);
   
       localStorage.setItem('flowData', JSON.stringify(response.data));
+      localStorage.setItem('speechText', text);
       navigate("/flow");
       console.log("API Response:", response.data);
     } catch (error) {
