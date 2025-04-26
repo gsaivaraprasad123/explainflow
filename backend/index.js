@@ -4,8 +4,10 @@ const winkNLP = require("wink-nlp");
 const model = require("wink-eng-lite-web-model");
 const nlp = winkNLP(model);
 const its = nlp.its;
+const cors = require('cors')
 
 const app = express();
+app.use(cors())
 const port = 3000;
 
 app.use(bodyParser.json());
