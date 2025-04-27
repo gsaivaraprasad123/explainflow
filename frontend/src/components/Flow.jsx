@@ -18,31 +18,43 @@ const Flow = () => {
   const [loading, setLoading] = useState(false); // 🚀 loading state
 
   const applyLayout = useCallback((nodes, edges) => {
-    dagreGraph.setGraph({ rankdir: "TB" });
-
+    // Initialize the graph and set layout options
+    dagreGraph.setGraph({
+      rankdir: "TB", // Top to Bottom layout
+      nodesep: 20,   // Decrease the space between nodes horizontally (adjust this as needed)
+      ranksep: 50,   // Reduce the vertical space between different levels of nodes
+      marginx: 10,   // Horizontal margin
+      marginy: 10,   // Vertical margin
+    });
+  
+    // Add nodes to the graph
     nodes.forEach((node) => {
       dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
     });
-
+  
+    // Add edges to the graph to ensure proper connection
     edges.forEach((edge) => {
-      dagreGraph.setEdge(edge.source, edge.target);
+      dagreGraph.setEdge(edge.source, edge.target, { label: edge.label });
     });
-
+  
+    // Apply the layout algorithm
     dagre.layout(dagreGraph);
-
+  
+    // Adjust node positions after layout to account for the node width and height
     const newNodes = nodes.map((node) => {
       const nodeWithPosition = dagreGraph.node(node.id);
       return {
         ...node,
         position: {
-          x: nodeWithPosition.x - nodeWidth / 2,
-          y: nodeWithPosition.y - nodeHeight / 2,
+          x: nodeWithPosition.x - nodeWidth / 2, // Adjust for node width
+          y: nodeWithPosition.y - nodeHeight / 2, // Adjust for node height
         },
       };
     });
-
+  
     return newNodes;
   }, []);
+  
 
   useEffect(() => {
     const loadFlowData = async () => {
@@ -80,6 +92,8 @@ const Flow = () => {
         if (speechText) {
           await generateFeedbackAndAddStickyNode(speechText, topic, layoutedNodes, reactFlowEdges);
         }
+
+        await analyzeFlowchartAndSuggest(layoutedNodes, reactFlowEdges, topic); // 🚀 Call new function
       }
     };
 
@@ -95,7 +109,7 @@ const Flow = () => {
       const feedbackStickyNode = {
         id: `sticky-feedback-${Date.now()}`,
         type: "sticky",
-        position: { x: 1200, y: 50 },
+        position: { x: 800, y: 600 },
         data: {
           title: "Feedback",
           content: feedback, // pass only content here
@@ -105,7 +119,7 @@ const Flow = () => {
       const overviewStickyNode = {
         id: `sticky-overview-${Date.now()}`,
         type: "sticky",
-        position: { x: 1400, y: 50 },
+        position: { x: 1100, y: 600 },
         data: {
           title: "Overview",
           content: overview, // pass only content here
@@ -121,6 +135,49 @@ const Flow = () => {
       setLoading(false); // hide loading
     }
   };
+
+  const analyzeFlowchartAndSuggest = async (nodes, edges, topic) => {
+    try {
+      const response = await axios.post('http://localhost:3000/analyze-flowchart', {
+        nodes,
+        edges,
+        topic,
+      });
+  
+      const { suggestions } = response.data; // Array of suggestion strings
+  
+      // Group suggestions into chunks of 4-5 suggestions per sticky note
+      const chunkedSuggestions = [];
+      const chunkSize = 5; // Set the maximum number of suggestions per sticky node
+      for (let i = 0; i < suggestions.length; i += chunkSize) {
+        chunkedSuggestions.push(suggestions.slice(i, i + chunkSize));
+      }
+  
+      // Create sticky nodes for each chunk of suggestions
+      const suggestionStickyNodes = chunkedSuggestions.map((chunk, index) => {
+        const xPosition = 100 + (index % 2) * 400; // Space suggestions horizontally (2 per row)
+        const yPosition = 600 + Math.floor(index / 2) * 200; // Space suggestions vertically (next row every 2 chunks)
+  
+        return {
+          id: `sticky-suggestion-${Date.now()}-${index}`,
+          type: "sticky",
+          position: { x: xPosition, y: yPosition },
+          data: { 
+            title: `Suggestions Group ${index + 1}`,
+            content: chunk.join("\n"), // Join the suggestions in a single string
+          },
+        };
+      });
+  
+      // Update the nodes state with the new sticky suggestions
+      setNodes((prevNodes) => [...suggestionStickyNodes, ...prevNodes]);
+    } catch (error) {
+      console.error("Failed to analyze flowchart:", error);
+    }
+  };
+  
+  
+  
 
   return (
     <div style={{ width: "100%", height: "90vh" }}>

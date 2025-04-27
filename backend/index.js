@@ -1,3 +1,4 @@
+require('dotenv').config(); // make sure dotenv is used
 const express = require("express");
 const bodyParser = require("body-parser");
 const winkNLP = require("wink-nlp");
@@ -5,11 +6,14 @@ const model = require("wink-eng-lite-web-model");
 const nlp = winkNLP(model);
 const its = nlp.its;
 const cors = require('cors')
-const axios = require('axios')
+const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 app.use(cors())
 const port = 3000;
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.use(bodyParser.json());
 
@@ -122,6 +126,51 @@ ${text}
   }
 });
 
+app.post('/analyze-flowchart', async (req, res) => {
+  const { nodes, edges, topic } = req.body;
+
+  try {
+    // 1. Format nodes and edges nicely
+    const formattedFlow = nodes.map((n, idx) => `${idx + 1}. ${n.data.label}`).join('\n');
+
+    // 2. Create the prompt for Gemini
+    const prompt = `
+      Analyze the following flowchart based on the topic: "${topic}".
+      Steps:
+      ${formattedFlow}
+
+      Please suggest improvements:
+      - Highlight if steps are missing.
+      - Identify disconnected or isolated steps.
+      - Recommend if more clarity, ordering, or branching is needed.
+      - Point out any common mistakes or missing best practices based on the topic.
+
+      Be concise but specific.
+    `;
+
+    // 3. Send to Gemini
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let suggestions = response.text().trim();
+
+    // 4. Ensure suggestions are returned as an array for further processing
+    if (typeof suggestions === 'string') {
+      suggestions = suggestions.split('\n').map((suggestion) => suggestion.trim()).filter(Boolean);
+    }
+
+    // 5. If suggestions is not an array, respond with a default error message
+    if (!Array.isArray(suggestions)) {
+      return res.status(500).json({ error: "Failed to analyze flowchart. Suggestions are not in the expected format." });
+    }
+
+    // 6. Return AI suggestions
+    res.json({ suggestions });
+  } catch (error) {
+    console.error("Gemini Analysis Error:", error.message);
+    res.status(500).json({ message: "Error analyzing flowchart" });
+  }
+});
 
 
 app.listen(port, () => {
