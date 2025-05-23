@@ -90,7 +90,7 @@ app.post('/feedback', async (req, res) => {
 You are an expert educator.
 Given the topic "${topic}" and the user's provided text, do the following:
 1. If there are any important points or subtopics missing from the user's text, list them in the feedback.
-2. Write a clean, short overview of the topic covering everything important.
+2. Write a clean, breif and full overview description of the topic covering everything important.
 3. DO NOT include any other information like explanations or additional details. Only provide the feedback and overview.
 
 Respond ONLY in raw JSON format, with no markdown or explanations.
