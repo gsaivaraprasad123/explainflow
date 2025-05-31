@@ -149,7 +149,7 @@ app.post('/analyze-flowchart', async (req, res) => {
     `;
 
     // 3. Send to Gemini
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let suggestions = response.text().trim();
